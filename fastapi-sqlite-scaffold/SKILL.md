@@ -74,7 +74,13 @@ Generated in full (identical pattern across every project):
   (title + empty mount point), not real UI, but already wired to
   `static/version.js` (renders `/api/version` in a fixed corner of the
   page, so a deploy landing is something you can verify by eye rather than
-  hoping the cache headers did their job)
+  hoping the cache headers did their job) and to
+  `https://static.evancooperman.com/theme.css`/`theme.js`/`icons.js` - the
+  shared look-and-feel (accordion cards, add-toggle forms, message toasts,
+  `.app-nav`, buttons, forms) used across the fleet, maintained in the
+  `shared-assets` repo. Build real UI with those shared classes/helpers
+  (`window.Theme`) rather than reinventing them in this app's own
+  `style.css`/`app.js` - see `shared-assets/README.md`.
 - `.github/workflows/deploy.yml` - SSHes into the Digital Ocean droplet on
   every push to `main` and restarts the service (needs `DO_HOST`, `DO_USER`,
   `DO_SSH_KEY` repo secrets set once, see README)

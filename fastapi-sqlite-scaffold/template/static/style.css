@@ -1,38 +1,14 @@
-* {
-  box-sizing: border-box;
-}
+/* Base reset, tokens, layout (.app-header/main), forms, accordion cards,
+   add-toggle, message toasts, .app-nav, and buttons all live in
+   https://static.evancooperman.com/theme.css (linked in index.html) - see
+   that repo's README before writing a rule that duplicates one already
+   there. Only this app's own look/behavior goes here.
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f6f5f2;
-  color: #2b2b2b;
-}
+   To keep this app's brand distinct from the shared default (warm off-
+   white, green accent), override tokens here, e.g.:
 
-.app-header {
-  padding: 24px 32px 8px;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 24px;
-}
-
-main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px 32px 64px;
-}
-
-/* Pairs with static/version.js. Plain in-flow text, not position:fixed -
-   it's the last thing inside <main> (see index.html), so it only comes
-   into view once you've actually scrolled to the bottom of the content,
-   rather than floating on screen at all times or landing in some awkward
-   spot relative to a nav bar you add later. */
-#app-version {
-  text-align: right;
-  margin-top: 24px;
-  font-size: 10px;
-  color: #8a8a8a;
-  opacity: 0.6;
-}
+   :root {
+     --accent: #2454ff;
+     --accent-bg: #eef0f7;
+   }
+*/
