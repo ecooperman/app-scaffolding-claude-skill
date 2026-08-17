@@ -2,4 +2,5 @@ venv/
 __pycache__/
 *.pyc
 __DB_NAME__
+__DB_NAME__.bak
 .DS_Store

@@ -55,7 +55,7 @@ def substitute(text: str, values: dict) -> str:
 
 def copy_template(target: Path, values: dict) -> None:
     for src in TEMPLATE_DIR.rglob("*"):
-        rel = src.relative_to(TEMPLATE_DIR)
+        rel = Path(substitute(str(src.relative_to(TEMPLATE_DIR)), values))
         dst = target / rel
         if src.is_dir():
             dst.mkdir(parents=True, exist_ok=True)

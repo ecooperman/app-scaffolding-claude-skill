@@ -67,6 +67,37 @@ a matter of swapping `DATABASE_URL` in `app/database.py` (and
 installing a driver (`psycopg`), and running `alembic upgrade head` against
 the new database - no application code depends on SQLite specifics.
 
+## Deploying
+
+Runs as a systemd service on the Digital Ocean droplet, reached through a
+Cloudflare Tunnel (no inbound ports opened on the droplet) and gated by
+Cloudflare Access - see `deploy/__PROJECT_DIR__.service`.
+
+One-time setup on the droplet:
+
+```bash
+sudo mkdir -p /opt/apps/__PROJECT_DIR__ && sudo chown deploy:deploy /opt/apps/__PROJECT_DIR__
+# as the deploy user:
+git clone <this repo's SSH URL> /opt/apps/__PROJECT_DIR__
+cd /opt/apps/__PROJECT_DIR__
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+sudo cp deploy/__PROJECT_DIR__.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now __PROJECT_DIR__
+```
+
+Then add an ingress entry for `__HOST__:__PORT__` to `/etc/cloudflared/config.yml`,
+route DNS for its hostname (`cloudflared tunnel route dns <tunnel-name>
+<hostname>`), and add a Cloudflare Access policy for that hostname.
+
+Ongoing deploys are automatic: `.github/workflows/deploy.yml` runs on every
+push to `main` - it SSHes in, pulls, reinstalls dependencies, runs `alembic
+upgrade head`, and restarts the service. Needs these repo secrets set once
+(Settings -> Secrets and variables -> Actions): `DO_HOST`, `DO_USER` (the
+`deploy` user), `DO_SSH_KEY` (that user's private key).
+
 ## Notes
 
 <!-- TODO: project-specific notes go here -->

@@ -58,15 +58,28 @@ Run `python3 <skill_dir>/scripts/scaffold.py --help` for the full flag list.
 ## What gets generated vs. left as stubs
 
 Generated in full (identical pattern across every project):
-- `app/config.py`, `app/database.py`, `app/deps.py`, `app/main.py`
+- `app/config.py`, `app/database.py`, `app/deps.py`, `app/main.py` - the
+  latter already wires up `/api/version` (reports the deployed git SHA) and
+  a `Cache-Control: no-store` middleware on every response, see "Design
+  notes" below for why
 - `app/routers/__init__.py` (empty package, ready for route files)
 - `alembic.ini`, `migrations/env.py`, `migrations/script.py.mako`,
   `migrations/README`, empty `migrations/versions/`
-- `requirements.txt`, `.gitignore`
-- `README.md` with the Alembic workflow and future-Postgres-upgrade sections
-  already written (same as time-management/social-planning)
+- `requirements.txt`, `.gitignore` (ignores `__DB_NAME__` and
+  `__DB_NAME__.bak` - the latter is what `scp`-based db-refresh scripts
+  tend to produce, see e.g. trip-planning's `refresh_local_dbs`)
+- `README.md` with the Alembic workflow, future-Postgres-upgrade, and
+  deploying sections already written (same as time-management/social-planning)
 - `static/index.html`, `static/app.js`, `static/style.css` - a bare shell
-  (title + empty mount point), not real UI
+  (title + empty mount point), not real UI, but already wired to
+  `static/version.js` (renders `/api/version` in a fixed corner of the
+  page, so a deploy landing is something you can verify by eye rather than
+  hoping the cache headers did their job)
+- `.github/workflows/deploy.yml` - SSHes into the Digital Ocean droplet on
+  every push to `main` and restarts the service (needs `DO_HOST`, `DO_USER`,
+  `DO_SSH_KEY` repo secrets set once, see README)
+- `deploy/<project-dir>.service` - the systemd unit to install on the
+  droplet, running `uvicorn` bound to the project's `HOST`/`PORT`
 
 Left as near-empty stubs, because they're different for every project and
 guessing at them would just create throwaway code to delete later:
@@ -114,3 +127,40 @@ exists:
   of the frontend, and the frontend is a thin `fetch()`-based client with no
   build step. That split is what makes the backend independently testable
   and lets the frontend be swapped later without touching the API.
+- The `no-store` `Cache-Control` middleware exists because plain
+  `StaticFiles` sends no cache header at all, which lets browsers apply
+  their own heuristic caching - and standalone/home-screen PWAs on iOS
+  cache even more aggressively than a normal browser tab, sometimes not
+  picking up a deployed change at all short of deleting and re-adding the
+  app. `no-cache` (permits caching but requires revalidation first) was
+  tried in trip-planning and wasn't strong enough - a CDN or PWA cache
+  layer isn't obliged to actually revalidate. `no-store` is the
+  unambiguous "never cache this, anywhere" signal, and these are
+  single-user local tools, so there's no real cost to it. If the app sits
+  behind Cloudflare, also add its hostname to any cache-bypass/Page Rules
+  the other apps use - an origin header alone doesn't guarantee the edge
+  honors it.
+- `#app-version` is deliberately plain in-flow text at the end of `<main>`,
+  not `position: fixed` - a fixed corner badge sounds nice but tends to
+  land in an awkward spot once a real layout (and possibly a fixed-to-
+  bottom mobile nav bar) exists around it. Simplest fix was no fix: let it
+  scroll with the page like everything else, so it shows up right where
+  the content ends.
+- If the project grows into a multi-page app with a bottom nav bar (see
+  time-management's or trip-planning's `static/*.html` + `.app-nav` CSS),
+  two more small conventions are worth copying at that point rather than
+  reinventing:
+  - `static/icons.js` (a `data-icon="name"` → inline-SVG registry with an
+    `applyIcons(root)` function, so nav/button icons are plain generic
+    SVGs instead of emoji, and can be re-applied to DOM built dynamically
+    after page load).
+  - A `<button class="app-nav-link" onclick="location.reload()">Refresh</button>`
+    nav item (see either app's nav bar for the exact markup, and
+    trip-planning's `button.app-nav-link` CSS override so it doesn't
+    inherit the generic `button {...}` styling). `no-store` should make a
+    plain reload always fetch fresh once it's taken effect once, but a
+    resource cached by the browser *before* that middleware existed can
+    still get served without a network round-trip until something forces
+    one - an always-visible reload button is a cheap way to give yourself
+    that escape hatch without needing devtools or a hard-refresh shortcut,
+    which isn't available at all in a standalone/home-screen PWA.
