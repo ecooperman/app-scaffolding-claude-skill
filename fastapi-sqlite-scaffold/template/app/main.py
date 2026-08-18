@@ -2,7 +2,11 @@ import subprocess
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+from .config import SHARED_ASSETS_BASE
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -28,11 +32,22 @@ def _get_git_sha() -> str:
 GIT_SHA = _get_git_sha()
 
 app = FastAPI(title="__PROJECT_TITLE__")
+templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/api/version")
 def get_version():
     return {"version": GIT_SHA}
+
+
+# Renders templates/index.html with shared_assets_base baked in server-side
+# (no client-side fetch, no flash of unstyled content) - see config.py's
+# SHARED_ASSETS_BASE for how local vs. production is decided. Registered
+# before the StaticFiles mount below so it takes priority over any
+# static/index.html that might still exist on disk.
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html", {"shared_assets_base": SHARED_ASSETS_BASE})
 
 
 @app.middleware("http")

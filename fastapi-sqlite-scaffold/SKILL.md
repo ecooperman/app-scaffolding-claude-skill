@@ -70,17 +70,27 @@ Generated in full (identical pattern across every project):
   tend to produce, see e.g. trip-planning's `refresh_local_dbs`)
 - `README.md` with the Alembic workflow, future-Postgres-upgrade, and
   deploying sections already written (same as time-management/social-planning)
-- `static/index.html`, `static/app.js`, `static/style.css` - a bare shell
-  (title + empty mount point), not real UI, but already wired to
-  `static/version.js` (renders `/api/version` in a fixed corner of the
-  page, so a deploy landing is something you can verify by eye rather than
-  hoping the cache headers did their job) and to
-  `https://static.evancooperman.com/theme.css`/`theme.js`/`icons.js` - the
-  shared look-and-feel (accordion cards, add-toggle forms, message toasts,
-  `.app-nav`, buttons, forms) used across the fleet, maintained in the
-  `shared-assets` repo. Build real UI with those shared classes/helpers
-  (`window.Theme`) rather than reinventing them in this app's own
-  `style.css`/`app.js` - see `shared-assets/README.md`.
+- `templates/index.html` (Jinja2, rendered by the `GET /` route in
+  `app/main.py` - not served via `StaticFiles`), plus `static/app.js`,
+  `static/style.css` - a bare shell (title + empty mount point), not real
+  UI, but already wired to `static/version.js` (renders `/api/version` in a
+  fixed corner of the page, so a deploy landing is something you can verify
+  by eye rather than hoping the cache headers did their job) and to
+  `{{ shared_assets_base }}/theme.css`/`theme.js`/`icons.js` - the shared
+  look-and-feel (accordion cards, add-toggle forms, message toasts, modals,
+  `.app-nav`, buttons, forms) and shared DOM/fetch/date helpers
+  (`Global.el`, `Global.fetchJSON`, `Global.showMessage`, ...) used across
+  the fleet, maintained in the `shared-assets` repo, exposed as
+  `window.Global`. `shared_assets_base` comes from `app/config.py`'s
+  `SHARED_ASSETS_BASE` (`https://static.evancooperman.com` in production,
+  `http://127.0.0.1:8070` otherwise - see "Design notes" below), so local
+  dev and the real deploy point at the right one automatically, with no
+  HTML/code edits ever needed to switch. Any *other* HTML page you add
+  needs the same treatment: a template under `templates/`, not a static
+  file, plus a `GET` route in `app/main.py` rendering it the same way as
+  `index()` does. Build real UI with those shared classes/helpers rather
+  than reinventing them in this app's own `style.css`/`app.js` - see
+  `shared-assets/README.md`.
 - `.github/workflows/deploy.yml` - SSHes into the Digital Ocean droplet on
   every push to `main` and restarts the service (needs `DO_HOST`, `DO_USER`,
   `DO_SSH_KEY` repo secrets set once, see README)
