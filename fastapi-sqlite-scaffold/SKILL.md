@@ -95,7 +95,12 @@ Generated in full (identical pattern across every project):
   every push to `main` and restarts the service (needs `DO_HOST`, `DO_USER`,
   `DO_SSH_KEY` repo secrets set once, see README)
 - `deploy/<project-dir>.service` - the systemd unit to install on the
-  droplet, running `uvicorn` bound to the project's `HOST`/`PORT`
+  droplet, running `uvicorn` bound to the project's `HOST`/`PORT`, and
+  loading the droplet's shared secrets file
+  (`EnvironmentFile=-/etc/personal-apps/shared.env`) so shared API keys
+  like `ANTHROPIC_API_KEY` are available with no per-app setup. Read them
+  in `app/config.py` with `os.environ.get(...)`; never add a per-app
+  `Environment=` line for a key that's already in the shared file
 
 Left as near-empty stubs, because they're different for every project and
 guessing at them would just create throwaway code to delete later:
