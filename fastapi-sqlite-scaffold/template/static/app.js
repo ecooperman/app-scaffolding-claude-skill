@@ -18,3 +18,12 @@ async function fetchJSON(url, options) {
 
 // TODO: build the real frontend here, using fetchJSON(`${API_BASE}/...`)
 // to talk to the backend once routers exist.
+//
+// Convention: any section of a page that waits on async data shows a
+// spinner, so it's obvious something is happening. Use the shared helper
+// (theme.js, loaded in index.html) rather than rolling your own:
+//
+//   const items = await Global.withLoading(listEl, fetchJSON(`${API_BASE}/items`));
+//
+// It shows the spinner on listEl, waits, and always clears it - even if the
+// fetch throws. See shared-assets/README.md.

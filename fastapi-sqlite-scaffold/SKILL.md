@@ -81,7 +81,9 @@ Generated in full (identical pattern across every project):
   `.app-nav`, buttons, forms) and shared DOM/fetch/date helpers
   (`Global.el`, `Global.fetchJSON`, `Global.showMessage`, ...) used across
   the fleet, maintained in the `shared-assets` repo, exposed as
-  `window.Global`. `shared_assets_base` comes from `app/config.py`'s
+  `window.Global`. Any section that waits on async data should be wrapped in
+  `Global.withLoading(el, promise)` so it shows a spinner (the generated
+  `static/app.js` stub documents this). `shared_assets_base` comes from `app/config.py`'s
   `SHARED_ASSETS_BASE` (`https://static.evancooperman.com` in production,
   `http://127.0.0.1:8070` otherwise - see "Design notes" below), so local
   dev and the real deploy point at the right one automatically, with no
