@@ -1,0 +1,7 @@
+
+# --- people's own API keys (see app/apikeys.py) -----------------------------
+# Keys people save on their Profile page are encrypted with KEY_ENCRYPTION_SECRET,
+# from the shared secrets file (shared_python/settings.py, DEPLOYMENT.md) - never
+# change it once keys are saved. The server's own ("house") key for each service is
+# used only by an administrator; it comes from the shared file too.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")

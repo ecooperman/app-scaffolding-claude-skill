@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import SHARED_ASSETS_BASE
 from .routers import me
+# @@router_imports@@
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -51,6 +52,9 @@ def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {"shared_assets_base": SHARED_ASSETS_BASE})
 
 
+# @@pages@@
+
+
 @app.middleware("http")
 async def no_cache(request: Request, call_next):
     """Never let the browser (or iOS's aggressive standalone-PWA cache) serve
@@ -69,6 +73,7 @@ async def no_cache(request: Request, call_next):
 
 
 app.include_router(me.router)
+# @@routers@@
 
 # TODO: once you've added a router under app/routers/, wire it in here, e.g.
 # from .routers import things

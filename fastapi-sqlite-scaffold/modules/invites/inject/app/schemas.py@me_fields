@@ -1,0 +1,4 @@
+    # How many more people they may ask to have let in; null = no limit.
+    invites_left: Optional[int] = None
+    # Requests waiting for approval (administrators only, else 0).
+    pending_invites: int = 0

@@ -12,3 +12,10 @@
      --accent-bg: #eef0f7;
    }
 */
+
+/* Links to the optional pages (Profile, Invites) that scaffold.py's modules add. */
+.app-links {
+  display: flex;
+  gap: 14px;
+  margin: 0 0 12px;
+}

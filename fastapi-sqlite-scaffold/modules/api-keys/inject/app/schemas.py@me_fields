@@ -1,0 +1,3 @@
+    # Which paid services this person can use right now (their own key, or the
+    # server's if they're the administrator) - for pages to show or hide features.
+    can_use: Dict[str, bool] = {}

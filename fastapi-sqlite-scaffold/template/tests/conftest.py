@@ -1,6 +1,7 @@
 """Tests run against a throwaway SQLite file built by the real migrations, so
 they exercise the schema the app actually ships with. DATABASE_URL must be set
 before anything imports app.database."""
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -26,6 +27,12 @@ def _migrate():
     cfg = Config(str(ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(ROOT / "migrations"))
     command.upgrade(cfg, "head")
+    # migrations/env.py configures logging from alembic.ini, which switches off
+    # every logger that already exists (the app's, here - it was imported
+    # first). The running app never does that, so turn them back on or tests
+    # of what gets logged would silently see nothing.
+    for name in logging.root.manager.loggerDict:
+        logging.getLogger(name).disabled = False
     yield
     os.unlink(_db_file.name)
 

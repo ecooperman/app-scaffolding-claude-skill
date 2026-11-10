@@ -33,3 +33,4 @@ DEV_USER_EMAIL = os.environ.get("DEV_USER_EMAIL", "dev@localhost.test").strip().
 ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
 if ENV != "production":
     ADMIN_EMAILS.add(DEV_USER_EMAIL)
+# @@config@@

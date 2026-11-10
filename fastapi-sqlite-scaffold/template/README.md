@@ -105,6 +105,7 @@ a matter of swapping `DATABASE_URL` in `app/database.py` (and
 installing a driver (`psycopg`), and running `alembic upgrade head` against
 the new database - no application code depends on SQLite specifics.
 
+<!-- @@readme@@ -->
 ## Deploying
 
 Runs as a systemd service on the Digital Ocean droplet, reached through a

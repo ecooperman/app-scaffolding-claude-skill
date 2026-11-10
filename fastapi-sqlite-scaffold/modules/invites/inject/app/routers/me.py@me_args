@@ -1,0 +1,2 @@
+        invites_left=invites.invites_left(db, user),
+        pending_invites=invites.pending_count(db) if is_admin(user) else 0,

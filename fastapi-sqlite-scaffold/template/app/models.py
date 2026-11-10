@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
 from .database import Base
+# @@model_imports@@
 
 
 class User(Base):
@@ -19,6 +20,9 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# @@models@@
 
 
 # Define your SQLAlchemy models here, e.g.:

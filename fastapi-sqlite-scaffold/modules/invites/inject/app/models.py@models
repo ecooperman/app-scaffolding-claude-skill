@@ -1,0 +1,23 @@
+INVITE_PENDING = "pending"
+INVITE_APPROVED = "approved"
+INVITE_DECLINED = "declined"
+
+
+class Invite(Base):
+    """Someone's request to let a person with no account into the app. The
+    administrator approves it (the email is added to Cloudflare's allowed group and
+    the person gets an account) or declines it. One request per email, ever, so a
+    refused person can't be asked for again by someone else. Counts against the
+    asker's allowance in any state except withdrawn (app/invites.py)."""
+
+    __tablename__ = "invites"
+    __table_args__ = (UniqueConstraint("email", name="uq_invites_email"),)
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, nullable=False)  # lowercased
+    invited_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String, nullable=False, default=INVITE_PENDING)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    decided_at = Column(DateTime, nullable=True)
+
+    invited_by = relationship("User")

@@ -1,0 +1,3 @@
+@app.get("/invites.html", response_class=HTMLResponse)
+def invites_page(request: Request):
+    return templates.TemplateResponse(request, "invites.html", {"shared_assets_base": SHARED_ASSETS_BASE})

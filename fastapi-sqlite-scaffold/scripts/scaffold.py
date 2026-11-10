@@ -13,6 +13,23 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = SCRIPT_DIR.parent / "template"
+MODULES_DIR = SCRIPT_DIR.parent / "modules"
+
+# Optional features, copied in on request (see SKILL.md, "Optional modules"). Each
+# lives in modules/<name>/: files/ is copied into the project as-is, and inject/
+# holds snippets spliced into the template's marker lines. The order is the order
+# their migrations chain after the baseline users migration.
+MODULES = ["api-keys", "invites"]
+BASE_REVISION = "b1e7c0a95d42"  # the template's create-users migration
+MODULE_REVISIONS = {"api-keys": "c3e1a7f905d2", "invites": "d7b4f2a60c18"}
+
+# A line like "# @@routers@@" or "<!-- @@nav@@ -->" in a template file: replaced by
+# whatever the chosen modules inject for that name, or dropped if there is nothing.
+MARKER_RE = re.compile(r"^[ \t]*(?:#|<!--) @@(\w+)@@(?: -->)?[ \t]*\n", re.MULTILINE)
+# What goes between two modules' snippets for the same marker (default: nothing).
+JOINERS = {"models": "\n\n", "schemas": "\n\n", "pages": "\n\n"}
+# Markers whose snippets are wrapped as a group when there are any.
+WRAPPERS = {"nav": ('  <nav class="app-links">\n', "  </nav>\n")}
 
 PLACEHOLDERS = ("__PROJECT_TITLE__", "__PORT__", "__HOST__", "__DB_NAME__", "__PROJECT_DIR__")
 
@@ -82,6 +99,70 @@ def copy_template(target: Path, values: dict) -> None:
         dst.write_text(substitute(text, values))
 
 
+def copy_modules(target: Path, chosen: list, values: dict) -> dict:
+    """Copy each chosen module's files into the project and return its injection
+    snippets as {(relative path, marker): [text, ...]}."""
+    snippets: dict = {}
+    previous = BASE_REVISION
+    for name in MODULES:
+        if name not in chosen:
+            continue
+        module_values = {**values, "__DOWN_REVISION__": previous}
+        previous = MODULE_REVISIONS[name]
+        files_dir = MODULES_DIR / name / "files"
+        for src in sorted(files_dir.rglob("*")):
+            if src.is_dir():
+                continue
+            dst = target / substitute(str(src.relative_to(files_dir)), module_values)
+            if dst.exists():
+                sys.exit(f"module {name} would overwrite {dst.relative_to(target)}")
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(substitute(src.read_text(), module_values))
+        inject_dir = MODULES_DIR / name / "inject"
+        for src in sorted(inject_dir.rglob("*@*")):
+            rel, marker = str(src.relative_to(inject_dir)).rsplit("@", 1)
+            snippets.setdefault((rel, marker), []).append(substitute(src.read_text(), module_values))
+    return snippets
+
+
+def splice_markers(target: Path, snippets: dict) -> None:
+    """Replace every marker line in the project with its snippets (or nothing)."""
+    for path in sorted(target.rglob("*")):
+        if not path.is_file() or path.suffix not in (".py", ".html", ".md", ".css", ".js"):
+            continue
+        rel = str(path.relative_to(target))
+        text = path.read_text()
+        if "@@" not in text:
+            continue
+
+        def replace(match):
+            parts = snippets.get((rel, match.group(1)), [])
+            if not parts:
+                return ""
+            marker = match.group(1)
+            # Whole classes/functions need two blank lines between them; one-line
+            # snippets (imports, routers, args) none.
+            body = JOINERS.get(marker, "").join(part if part.endswith("\n") else part + "\n" for part in parts)
+            if marker.endswith("imports"):
+                # Modules may both need the same import: keep each line once.
+                seen, lines = set(), []
+                for line in body.splitlines(keepends=True):
+                    if line.strip() and line in seen:
+                        continue
+                    seen.add(line)
+                    lines.append(line)
+                body = "".join(lines)
+            before, after = WRAPPERS.get(marker, ("", ""))
+            if marker in WRAPPERS:
+                body = "".join("    " + line for line in body.splitlines(keepends=True))
+            return before + body + after
+
+        new = MARKER_RE.sub(replace, text)
+        if path.suffix == ".py":
+            new = re.sub(r"\n{4,}", "\n\n\n", new)  # a dropped marker can leave a gap
+        path.write_text(new)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project_name", help="Directory name to create, e.g. recipe-box")
@@ -90,6 +171,8 @@ def main() -> None:
     parser.add_argument("--root", default=".", help="Parent directory to scaffold into (default: current directory)")
     parser.add_argument("--host", default="127.0.0.1", help="Host for app/config.py (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, help="Override the auto-picked port")
+    parser.add_argument("--with-api-keys", action="store_true", help="Add the api-keys module: people's own encrypted API keys + a Profile page")
+    parser.add_argument("--with-invites", action="store_true", help="Add the invites module: ask for new people to be let into the app, the administrator approves")
     parser.add_argument("--no-venv", action="store_true", help="Skip creating venv/ and installing dependencies")
     args = parser.parse_args()
 
@@ -120,6 +203,8 @@ def main() -> None:
 
     target.mkdir(parents=True, exist_ok=True)
     copy_template(target, values)
+    chosen = [name for name, flag in (("api-keys", args.with_api_keys), ("invites", args.with_invites)) if flag]
+    splice_markers(target, copy_modules(target, chosen, values))
     # Zip-packaged skills don't store empty directories, so migrations/versions/
     # may not exist in the on-disk template after install - ensure it anyway.
     (target / "migrations" / "versions").mkdir(parents=True, exist_ok=True)

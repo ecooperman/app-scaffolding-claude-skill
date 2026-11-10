@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile - __PROJECT_TITLE__</title>
+  <link rel="stylesheet" href="{{ shared_assets_base }}/theme.css" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Profile</h1>
+    <p id="profile-email" class="subtitle"></p>
+  </header>
+
+  <main>
+    <p><a href="/">&larr; Back to __PROJECT_TITLE__</a></p>
+    <div id="page-message" class="page-message hidden"></div>
+
+    <section class="section">
+      <h2>Your API keys</h2>
+      <p class="field-hint">
+        Some features call paid services. Add your own key for each and those features run on your
+        own account with the provider, which bills you directly for what you use. Keys are stored
+        encrypted and can't be viewed again once saved - only replaced or removed. Without a key,
+        a feature is simply turned off for you.
+      </p>
+      <div id="api-keys"></div>
+    </section>
+  </main>
+
+  <script src="{{ shared_assets_base }}/theme.js"></script>
+  <script src="{{ shared_assets_base }}/icons.js"></script>
+  <script src="/profile.js"></script>
+</body>
+</html>

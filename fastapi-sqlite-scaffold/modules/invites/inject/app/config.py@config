@@ -1,0 +1,13 @@
+
+# --- letting new people in (see app/invites.py) ------------------------------
+# Anyone can ask for a person with no account to be let in; the administrator
+# approves each request, which adds the email to the Cloudflare Access group that
+# lets people through the login gate. The Cloudflare group and notification
+# settings are shared by every app (shared_python/settings.py, DEPLOYMENT.md).
+from shared_python.settings import int_env  # noqa: E402
+
+# How many people each person may ask for (administrators are unlimited).
+INVITES_PER_USER = int_env("INVITES_PER_USER", 5)
+
+# Links in the emails and alerts we send. Set the hostname to this app's real one.
+PUBLIC_URL = "https://__PROJECT_DIR__.evancooperman.com" if ENV == "production" else f"http://{HOST}:{PORT}"

@@ -1,0 +1,19 @@
+class InviteCreate(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class Invite(BaseModel):
+    """A request for someone without an account, as its asker sees it."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    status: Literal["pending", "approved", "declined"]
+    created_at: datetime
+
+
+class AdminInvite(Invite):
+    """The same request as the administrator sees it, with who asked."""
+
+    invited_by_email: str
