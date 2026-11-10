@@ -47,6 +47,19 @@ def find_next_port(root: Path, host: str, start: int = 8000, step: int = 10) -> 
     return candidate
 
 
+def find_python() -> str:
+    """A Python (3.10+, what the pinned dependencies need) to build the venv
+    with: this one if it is new enough, else the newest on PATH. macOS's system
+    python3 is 3.9, which can't install the template's requirements."""
+    if sys.version_info >= (3, 10):
+        return sys.executable
+    for name in ("python3.13", "python3.12", "python3.11", "python3.10"):
+        found = shutil.which(name)
+        if found:
+            return found
+    sys.exit("Need Python 3.10 or newer for the virtualenv (found " + sys.version.split()[0] + ") - install one, or use --no-venv")
+
+
 def substitute(text: str, values: dict) -> str:
     for key, value in values.items():
         text = text.replace(key, value)
@@ -84,6 +97,11 @@ def main() -> None:
     if not root.is_dir():
         sys.exit(f"--root {root} is not a directory")
 
+    # requirements.txt installs the shared package from ../shared-python, so it
+    # must sit next to the new project (on the droplet: /opt/apps/shared-python).
+    if not (root / "shared-python" / "pyproject.toml").is_file():
+        sys.exit(f"{root / 'shared-python'} not found - clone the shared-python repo next to the projects first (see DEPLOYMENT.md)")
+
     target = root / args.project_name
     if target.exists() and any(target.iterdir()):
         sys.exit(f"{target} already exists and is not empty - refusing to overwrite")
@@ -110,11 +128,18 @@ def main() -> None:
     if not args.no_venv:
         venv_dir = target / "venv"
         print("Creating virtualenv and installing dependencies...")
-        subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+        subprocess.run([find_python(), "-m", "venv", str(venv_dir)], check=True)
         pip = venv_dir / "bin" / "pip"
+        # A fresh venv ships whatever pip came with the Python that made it; the
+        # one in macOS's system Python is too old to install shared-python
+        # (a pyproject.toml-only package) in editable mode.
+        subprocess.run([str(pip), "install", "-q", "--upgrade", "pip"], check=True)
+        # Run from the project folder: pip resolves "-e ../shared-python" in
+        # requirements.txt against the current directory, not the file's.
         subprocess.run(
-            [str(pip), "install", "-q", "-r", str(target / "requirements.txt"), "-r", str(target / "requirements-dev.txt")],
+            [str(pip), "install", "-q", "-r", "requirements.txt", "-r", "requirements-dev.txt"],
             check=True,
+            cwd=target,
         )
 
     print(

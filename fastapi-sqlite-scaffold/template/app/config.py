@@ -14,14 +14,12 @@ SHARED_ASSETS_BASE = "https://static.evancooperman.com" if ENV == "production" e
 
 # --- who is signed in (see app/auth.py) -------------------------------------
 # There is no login form: Cloudflare Access authenticates everyone before a
-# request reaches the app and attaches a signed token saying who it was. In
-# production the app verifies that token and REFUSES every request unless both
-# values below are set (from Zero Trust -> Access -> Applications -> (the app)
-# -> Overview; the AUD tag is on that page, several tags may be comma-separated).
-# They live in the shared secrets file every app reads
-# (/etc/personal-apps/shared.env, see DEPLOYMENT.md), never in this repo.
-CF_TEAM_DOMAIN = os.environ.get("CF_TEAM_DOMAIN")  # e.g. "yourteam.cloudflareaccess.com"
-CF_ACCESS_AUD = os.environ.get("CF_ACCESS_AUD")
+# request reaches the app and attaches a signed token saying who it was.
+# shared_python.auth verifies that token and, in production, REFUSES every
+# request unless CF_TEAM_DOMAIN and CF_ACCESS_AUD are set. Those (and every other
+# Cloudflare/notification setting) live in the shared secrets file every app
+# reads (/etc/personal-apps/shared.env, see DEPLOYMENT.md and
+# shared_python/settings.py), never in this repo.
 
 # Locally there's no Cloudflare in front, so requests are treated as coming
 # from this address; a Cf-Access-Authenticated-User-Email header or a

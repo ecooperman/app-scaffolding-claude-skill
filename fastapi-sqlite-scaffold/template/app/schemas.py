@@ -8,6 +8,7 @@ class Me(BaseModel):
 
     id: int
     email: str
+    is_admin: bool = False
 
 
 # Define your Pydantic schemas here, following the Base/Create/Update/read

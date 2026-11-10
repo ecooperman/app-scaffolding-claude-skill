@@ -51,7 +51,16 @@ python3 <skill_dir>/scripts/scaffold.py <project-name> --title "Human Readable T
   double-checks nothing is already listening on it.
 - `--no-venv` - skip creating a virtualenv and installing dependencies.
   By default the script does create `venv/` and `pip install -r
-  requirements.txt`, so the project is immediately ready to migrate and run.
+  requirements.txt -r requirements-dev.txt`, so the project is immediately
+  ready to migrate and run. The venv is built with Python 3.10+ (the script
+  picks one from PATH if the `python3` running it is older, as macOS's system
+  3.9 is) and pip is upgraded first.
+
+**Prerequisite:** the `shared-python` repo must sit next to the new project
+(`<root>/shared-python`, on the droplet `/opt/apps/shared-python` owned by
+`deploy`). The generated `requirements.txt` installs it with
+`-e ../shared-python`, and the script stops early if it isn't there. See the
+root `DEPLOYMENT.md` ("Shared Python code").
 
 Run `python3 <skill_dir>/scripts/scaffold.py --help` for the full flag list.
 
@@ -63,15 +72,18 @@ Generated in full (identical pattern across every project):
   a `Cache-Control: no-store` middleware on every response, see "Design
   notes" below for why
 - **Accounts** (every app gets them - see "Accounts" below): `app/auth.py`
-  (`current_user`, `require_admin`), the `User` model in `app/models.py`, a
-  baseline migration creating the `users` table, `GET /api/me`
-  (`app/routers/me.py`), sign-in settings in `app/config.py`, and a pytest setup
+  (`current_user`, `require_admin`; a thin wrapper over `shared_python.auth`,
+  which does the Cloudflare token check), the `User` model in
+  `app/models.py`, a baseline migration creating the `users` table, `GET
+  /api/me` (`app/routers/me.py`, includes `is_admin`), `DEV_USER_EMAIL` and
+  `ADMIN_EMAILS` in `app/config.py`, and a pytest setup
   (`tests/`, `pytest.ini`, `requirements-dev.txt`) whose `tests/test_auth.py`
   covers the sign-in rules
 - `app/routers/__init__.py` (empty package, ready for route files)
 - `alembic.ini`, `migrations/env.py`, `migrations/script.py.mako`,
   `migrations/README`, empty `migrations/versions/`
-- `requirements.txt` (includes `PyJWT[crypto]` for verifying sign-in tokens),
+- `requirements.txt` (includes `-e ../shared-python`, the shared package that
+  verifies sign-in tokens and holds the Cloudflare/notification helpers),
   `.gitignore` (ignores `__DB_NAME__` and
   `__DB_NAME__.bak` - the latter is what `scp`-based db-refresh scripts
   tend to produce, see e.g. trip-planning's `refresh_local_dbs`)
@@ -126,11 +138,12 @@ Every scaffolded app has accounts built in, following the pattern first
 shipped in `lists` (read its README's "Accounts and sharing" for the full
 version). The short form:
 
-- No login form. Cloudflare Access signs people in; `app/auth.py` verifies the
-  signed token it attaches and creates a `users` row on first sight. In
-  production the app **refuses every request** unless `CF_TEAM_DOMAIN` and
-  `CF_ACCESS_AUD` are set in `/etc/personal-apps/shared.env`, and it never
-  trusts the plain email header (a hostname that bypasses Access would let
+- No login form. Cloudflare Access signs people in; `shared_python.auth`
+  verifies the signed token it attaches and `app/auth.py` creates a `users` row
+  on first sight. The token details (audiences, expiry, signature) are tested in
+  shared-python, not per app. In production the app **refuses every request**
+  unless `CF_TEAM_DOMAIN` and `CF_ACCESS_AUD` are set in
+  `/etc/personal-apps/shared.env`, and it never trusts the plain email header (a hostname that bypasses Access would let
   anyone forge it). Locally every request is `DEV_USER_EMAIL`, or someone else
   via a header or the `dev_user` cookie.
 - **When you add tables:** anything a person creates gets

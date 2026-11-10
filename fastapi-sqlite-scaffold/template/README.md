@@ -49,6 +49,8 @@ it sees them. `GET /api/me` says who you are.
   the one bug here that leaks data between people.
 - **Production** needs `CF_TEAM_DOMAIN` and `CF_ACCESS_AUD` (plus optionally
   `ADMIN_EMAILS`) in `/etc/personal-apps/shared.env`, see `DEPLOYMENT.md`. The
+  token check itself is the `shared-python` package (`-e ../shared-python` in
+  `requirements.txt`), the same code lists and trip-planning use. The
   app answers 503 to everything without them and never trusts the plain email
   header, which a hostname that bypasses Access would let anyone forge.
 - **Who can reach the app is a Cloudflare Access setting, not this code.** A
@@ -109,7 +111,9 @@ Runs as a systemd service on the Digital Ocean droplet, reached through a
 Cloudflare Tunnel (no inbound ports opened on the droplet) and gated by
 Cloudflare Access - see `deploy/__PROJECT_DIR__.service`.
 
-One-time setup on the droplet:
+One-time setup on the droplet (the `shared-python` package must already be cloned
+at `/opt/apps/shared-python`, owned by `deploy`, because `requirements.txt` installs
+it from `../shared-python` - see `DEPLOYMENT.md`):
 
 ```bash
 sudo mkdir -p /opt/apps/__PROJECT_DIR__ && sudo chown deploy:deploy /opt/apps/__PROJECT_DIR__
