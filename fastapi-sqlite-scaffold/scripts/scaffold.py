@@ -119,9 +119,10 @@ def copy_modules(target: Path, chosen: list, values: dict) -> dict:
             dst.parent.mkdir(parents=True, exist_ok=True)
             dst.write_text(substitute(src.read_text(), module_values))
         inject_dir = MODULES_DIR / name / "inject"
-        for src in sorted(inject_dir.rglob("*@*")):
-            rel, marker = str(src.relative_to(inject_dir)).rsplit("@", 1)
-            snippets.setdefault((rel, marker), []).append(substitute(src.read_text(), module_values))
+        # inject/<path of the file to change>/<marker>.txt, e.g. inject/app/main.py/routers.txt
+        for src in sorted(inject_dir.rglob("*.txt")):
+            rel = str(src.parent.relative_to(inject_dir))
+            snippets.setdefault((rel, src.stem), []).append(substitute(src.read_text(), module_values))
     return snippets
 
 

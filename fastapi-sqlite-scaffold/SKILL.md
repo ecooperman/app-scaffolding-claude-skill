@@ -138,7 +138,7 @@ guessing at them would just create throwaway code to delete later:
 
 Two features that several apps want but not every app does. Ask for them at
 scaffold time; each is a folder under `modules/<name>/` (`files/` copied in,
-`inject/` snippets spliced into the template's `# @@marker@@` lines, which are
+`inject/<file>/<marker>.txt` snippets spliced into the template's `# @@marker@@` lines, which are
 removed when nothing uses them). Their migrations chain after the baseline
 `users` one in a fixed order (api-keys, then invites), and both come with tests that
 the generated project runs (`pytest`).
