@@ -30,6 +30,42 @@ touching the API.
 
 <!-- TODO: list the actual endpoints once routers exist -->
 
+## Accounts
+
+There is no sign-in form. Cloudflare Access authenticates everyone before a
+request reaches the app and attaches a signed token saying who it was;
+`app/auth.py` verifies it and creates that person's `users` row the first time
+it sees them. `GET /api/me` says who you are.
+
+- **Use `current_user` on every route that touches a person's data**
+  (`user: models.User = Depends(current_user)`), and `require_admin` on anything
+  only you should reach (admins are the emails in `ADMIN_EMAILS`).
+- **Anything a person creates carries `owner_id`** (a non-null foreign key to
+  `users.id`) and **every query filters on it** - including the lookup by id in
+  `get`, `update` and `delete`, so someone else's id is a 404, never a 403 and
+  never their data. Test it: add a test that signs in as two people (see the
+  `alice`/`bob` fixtures in `tests/conftest.py`) and checks that neither can
+  see, change or delete the other's rows on every endpoint. A missed filter is
+  the one bug here that leaks data between people.
+- **Production** needs `CF_TEAM_DOMAIN` and `CF_ACCESS_AUD` (plus optionally
+  `ADMIN_EMAILS`) in `/etc/personal-apps/shared.env`, see `DEPLOYMENT.md`. The
+  app answers 503 to everything without them and never trusts the plain email
+  header, which a hostname that bypasses Access would let anyone forge.
+- **Who can reach the app is a Cloudflare Access setting, not this code.** A
+  new app starts behind the wildcard Access application, which allows only you.
+  Add its hostname to the "Shared apps" Access application only once every
+  table is scoped by `owner_id` - until then anyone let in would see everything.
+- **Locally** every request is `DEV_USER_EMAIL` (default `dev@localhost.test`).
+  To be someone else, send a `Cf-Access-Authenticated-User-Email` header or run
+  `document.cookie = "dev_user=bob@example.com; path=/"` in the browser console
+  (delete the cookie to go back). Neither works in production.
+- **Frontend:** call `Global.mountUserBadge()` (shared-assets) from the page
+  script to show who's signed in with a Log out link.
+
+Tests (`pytest`, after `pip install -r requirements-dev.txt`) run the real
+migrations on a throwaway database. `tests/test_auth.py` covers the sign-in
+rules; add your own access tests beside it.
+
 ## Schema changes (Alembic)
 
 Schema is owned by migrations under `migrations/versions/`, not by wiping

@@ -112,15 +112,19 @@ def main() -> None:
         print("Creating virtualenv and installing dependencies...")
         subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
         pip = venv_dir / "bin" / "pip"
-        subprocess.run([str(pip), "install", "-q", "-r", str(target / "requirements.txt")], check=True)
+        subprocess.run(
+            [str(pip), "install", "-q", "-r", str(target / "requirements.txt"), "-r", str(target / "requirements-dev.txt")],
+            check=True,
+        )
 
     print(
         "\nNext steps:\n"
-        f"  1. Define tables in {target}/app/models.py\n"
+        f"  1. Define tables in {target}/app/models.py - give each an owner_id (accounts are built in, see README)\n"
         f"  2. Add schemas in {target}/app/schemas.py and CRUD functions in {target}/app/crud.py\n"
         f"  3. Add a router under {target}/app/routers/ and wire it into {target}/app/main.py\n"
-        f"  4. cd {target} && source venv/bin/activate && alembic revision --autogenerate -m \"baseline schema\" && alembic upgrade head\n"
-        f"  5. python -m app.main, then open http://{args.host}:{port}"
+        f"  4. cd {target} && source venv/bin/activate && alembic upgrade head && alembic revision --autogenerate -m \"add my tables\" && alembic upgrade head\n"
+        f"  5. Add two-person access tests under tests/ and run pytest\n"
+        f"  6. python -m app.main, then open http://{args.host}:{port}"
     )
 
 

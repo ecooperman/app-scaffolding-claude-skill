@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import SHARED_ASSETS_BASE
+from .routers import me
 
 # Schema is owned by Alembic migrations (see migrations/) - run
 # `alembic upgrade head` before starting the app rather than relying on
@@ -66,6 +67,8 @@ async def no_cache(request: Request, call_next):
     response.headers["Cache-Control"] = "no-store"
     return response
 
+
+app.include_router(me.router)
 
 # TODO: once you've added a router under app/routers/, wire it in here, e.g.
 # from .routers import things
